@@ -75,6 +75,7 @@ export class UserResolver{
         return {user}
     }
 
+    //-----------------------------su Ctx va ,req e poi si fa req.session.userid = user.id ma non funziona
     @Mutation( () => UserResponse)
     async login( 
         @Arg('options') options: UsernamePasswordInput,
