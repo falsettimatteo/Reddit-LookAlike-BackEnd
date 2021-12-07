@@ -14,7 +14,6 @@ import connectRedis from 'connect-redis';
 import { MyContext } from "./types";
 import session from 'express-session';
 
-const cookieParser = require('cookie-parser');
 
 const redis = require('redis');
 
@@ -26,7 +25,7 @@ const orm =await MikroORM.init(microConfig);
 await orm.getMigrator().up();
 
  const app = express();
-
+  
  const RedisStore =  connectRedis(session);
  const redisClient = redis.createClient();
  
@@ -35,8 +34,8 @@ await orm.getMigrator().up();
        name: 'qid-COOKIE',
      store: new RedisStore({ client: redisClient,
      disableTouch: true,
-     host: '127.0.0.1',
-     port: 6379,
+     //host: '127.0.0.1',
+     //port: 6379,
      }),
      cookie: {
          maxAge: 1000 *60 *60 *24 *365 * 10, //10 years
@@ -49,7 +48,7 @@ await orm.getMigrator().up();
      resave: false,
    })
  )
- app.use(express)
+ 
 
 
 const apolloServer = new ApolloServer({
@@ -60,6 +59,7 @@ const apolloServer = new ApolloServer({
     }),
     context: ({req,res}): MyContext => ({ em: orm.em, req,res })  //this is accessible from all the resolvers!
 })
+
 await redisClient.connect();
 
 await apolloServer.start();
@@ -69,7 +69,7 @@ const cors = {
     origin: 'https://studio.apollographql.com'
 }
 
-apolloServer.applyMiddleware({ app, cors });
+apolloServer.applyMiddleware({ app ,cors});
 
 
 
@@ -82,6 +82,3 @@ app.listen(5000, () => {
 main().catch(error => {
     console.error(error);
 });
-
-
-console.log("Hello World");

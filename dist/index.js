@@ -15,7 +15,6 @@ const post_1 = require("./resolvers/post");
 const user_1 = require("./resolvers/user");
 const connect_redis_1 = __importDefault(require("connect-redis"));
 const express_session_1 = __importDefault(require("express-session"));
-const cookieParser = require('cookie-parser');
 const redis = require('redis');
 const main = async () => {
     const orm = await core_1.MikroORM.init(mikro_orm_config_1.default);
@@ -27,8 +26,6 @@ const main = async () => {
         name: 'qid-COOKIE',
         store: new RedisStore({ client: redisClient,
             disableTouch: true,
-            host: '127.0.0.1',
-            port: 6379,
         }),
         cookie: {
             maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
@@ -40,7 +37,6 @@ const main = async () => {
         secret: 'RandomStringToHide',
         resave: false,
     }));
-    app.use(express_1.default);
     const apolloServer = new apollo_server_express_1.ApolloServer({
         schema: await (0, type_graphql_1.buildSchema)({
             resolvers: [hello_1.HelloResolver, post_1.PostResolver, user_1.UserResolver],
@@ -63,5 +59,4 @@ const main = async () => {
 main().catch(error => {
     console.error(error);
 });
-console.log("Hello World");
 //# sourceMappingURL=index.js.map
