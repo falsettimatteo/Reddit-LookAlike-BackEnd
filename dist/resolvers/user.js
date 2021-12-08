@@ -94,7 +94,7 @@ let UserResolver = class UserResolver {
         }
         return { user };
     }
-    async login(options, { em, req }) {
+    async login(options, { em }) {
         const user = await em.findOne(User_1.User, { username: options.username });
         if (!user) {
             return {
@@ -113,7 +113,6 @@ let UserResolver = class UserResolver {
                     }]
             };
         }
-        req.session.userid = user.id;
         return {
             user
         };

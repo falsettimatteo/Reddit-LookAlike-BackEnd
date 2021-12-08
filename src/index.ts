@@ -11,8 +11,9 @@ import { UserResolver } from "./resolvers/user";
 
 
 import connectRedis from 'connect-redis';
-import { MyContext } from "./types";
+//import { MyContext } from "./types";
 import session from 'express-session';
+import cors from 'cors';
 
 
 const redis = require('redis');
@@ -28,6 +29,15 @@ await orm.getMigrator().up();
   
  const RedisStore =  connectRedis(session);
  const redisClient = redis.createClient();
+
+
+ app.use(
+     cors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+    
+    })
+ )
  
  app.use(
    session({
@@ -57,19 +67,15 @@ const apolloServer = new ApolloServer({
         validate: false,
 
     }),
-    context: ({req,res}): MyContext => ({ em: orm.em, req,res })  //this is accessible from all the resolvers!
+    context: ({req,res}) => ({ em: orm.em, req,res })  //this is accessible from all the resolvers!
 })
 
 await redisClient.connect();
 
 await apolloServer.start();
-const cors = {
-    credentials: true,
-    setCredentials: 'include',
-    origin: 'https://studio.apollographql.com'
-}
 
-apolloServer.applyMiddleware({ app ,cors});
+
+apolloServer.applyMiddleware({ app , cors: false});
 
 
 
