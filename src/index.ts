@@ -11,12 +11,11 @@ import { UserResolver } from "./resolvers/user";
 
 
 import connectRedis from 'connect-redis';
-//import { MyContext } from "./types";
 import session from 'express-session';
 import cors from 'cors';
 
 
-const redis = require('redis');
+import * as redis from 'redis';
 
 
 const main = async () => {
@@ -30,7 +29,6 @@ await orm.getMigrator().up();
  const RedisStore =  connectRedis(session);
  const redisClient = redis.createClient();
 
-
  app.use(
      cors({
     origin: 'http://localhost:3000',
@@ -41,8 +39,9 @@ await orm.getMigrator().up();
  
  app.use(
    session({
-       name: 'qid-COOKIE',
-     store: new RedisStore({ client: redisClient,
+       name: 'QID',
+     store: new RedisStore({ 
+     client: redisClient,
      disableTouch: true,
      //host: '127.0.0.1',
      //port: 6379,
@@ -50,10 +49,10 @@ await orm.getMigrator().up();
      cookie: {
          maxAge: 1000 *60 *60 *24 *365 * 10, //10 years
          httpOnly: true,
-         sameSite:'none',
+         sameSite:'lax',
          secure: __prod__,
      },
-     saveUninitialized: false,
+     saveUninitialized: true,
      secret: 'RandomStringToHide',
      resave: false,
    })
@@ -69,13 +68,18 @@ const apolloServer = new ApolloServer({
     }),
     context: ({req,res}) => ({ em: orm.em, req,res })  //this is accessible from all the resolvers!
 })
-
-await redisClient.connect();
+redisClient.on('error', function (err) {
+    console.log('Could NOT establish a connection with REDIS. ' + err);
+});
+redisClient.on('connect', () => {
+    console.log('Connected to REDIS successfully');
+});
 
 await apolloServer.start();
-
+await redisClient.connect();
 
 apolloServer.applyMiddleware({ app , cors: false});
+
 
 
 
