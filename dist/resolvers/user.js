@@ -19,7 +19,7 @@ exports.UserResolver = void 0;
 const User_1 = require("../entities/User");
 const type_graphql_1 = require("type-graphql");
 const argon2_1 = __importDefault(require("argon2"));
-const constants_1 = require("src/constants");
+const constants_1 = require("../constants");
 let UsernamePasswordInput = class UsernamePasswordInput {
 };
 __decorate([
@@ -147,6 +147,7 @@ let UserResolver = class UserResolver {
             else
                 resolve(true);
         }));
+        req.session = null;
     }
 };
 __decorate([
