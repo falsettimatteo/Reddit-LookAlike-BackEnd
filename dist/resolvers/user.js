@@ -60,10 +60,11 @@ UserResponse = __decorate([
 ], UserResponse);
 let UserResolver = class UserResolver {
     async me({ req, em }) {
-        if (!req.session.userid) {
+        if (!req.session.cookie) {
             return null;
         }
-        const user = await em.findOne(User_1.User, { id: req.session.userid });
+        const ID = parseInt(req.session.cookie.toString());
+        const user = await em.findOne(User_1.User, { id: ID });
         return user;
     }
     async register(options, { em, req }) {
@@ -106,8 +107,7 @@ let UserResolver = class UserResolver {
             }
             console.log("Message: ", err);
         }
-        req.session.userid = user.id;
-        console.log(req.session);
+        req.session.cookie = user.id;
         return user;
     }
     async login(options, { em, req }) {
@@ -129,7 +129,9 @@ let UserResolver = class UserResolver {
                     }]
             };
         }
-        req.session.userid = user.id;
+        if (user) {
+            req.session.cookie = user.id;
+        }
         return {
             user
         };

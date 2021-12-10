@@ -36,10 +36,11 @@ class UserResponse{
 export class UserResolver{
     @Query(() => User, {nullable: true })
    async me(@Ctx() {req, em}: MyContext) {
-        if(!req.session.userid) {
+        if(!req.session.cookie) {
             return null;
         }
-        const user = await em.findOne(User, {id: req.session.userid});
+        const ID = parseInt (req.session.cookie.toString());
+        const user = await em.findOne(User, {id: ID});
         return user;
     }
 
@@ -88,8 +89,7 @@ export class UserResolver{
             }
             console.log("Message: ", err);
         }
-         req.session.userid = user.id;
-         console.log(req.session)
+        req.session.cookie = user.id;
         return user;
     }
 
@@ -97,9 +97,9 @@ export class UserResolver{
     @Mutation( () => UserResponse)
     async login( 
         @Arg('options') options: UsernamePasswordInput,
-        @Ctx() {em, req}: MyContext
+        @Ctx() {em,req}: MyContext
     ): Promise<UserResponse> {
-        const user = await em.findOne(User, {username: options.username});
+        const user:any = await em.findOne(User, {username: options.username});
         if(!user){
             return {
                 errors: [{
@@ -117,7 +117,9 @@ export class UserResolver{
                 }]
             }
         }
-        req.session.userid = user.id;
+        if(user){
+            req.session.cookie = user.id;
+        }
         return {
             user
         };
