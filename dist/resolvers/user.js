@@ -59,6 +59,13 @@ UserResponse = __decorate([
     (0, type_graphql_1.ObjectType)()
 ], UserResponse);
 let UserResolver = class UserResolver {
+    async me({ req, em }) {
+        if (!req.session.userid) {
+            return null;
+        }
+        const user = await em.findOne(User_1.User, { id: req.session.userid });
+        return user;
+    }
     async register(options, { em, req }) {
         if (options.username.length <= 2) {
             return {
@@ -78,12 +85,13 @@ let UserResolver = class UserResolver {
         }
         const hashedPassword = await argon2_1.default.hash(options.password);
         let user;
+        const date = new Date();
         try {
             const result = await em.createQueryBuilder(User_1.User).getKnexQuery().insert({
                 username: options.username,
                 password: hashedPassword,
-                created_at: new Date(),
-                updated_at: new Date(),
+                created_at: date,
+                updated_at: date,
             }).returning("*");
             user = result[0];
         }
@@ -99,7 +107,8 @@ let UserResolver = class UserResolver {
             console.log("Message: ", err);
         }
         req.session.userid = user.id;
-        return { user };
+        console.log(req.session);
+        return user;
     }
     async login(options, { em, req }) {
         const user = await em.findOne(User_1.User, { username: options.username });
@@ -126,6 +135,13 @@ let UserResolver = class UserResolver {
         };
     }
 };
+__decorate([
+    (0, type_graphql_1.Query)(() => User_1.User, { nullable: true }),
+    __param(0, (0, type_graphql_1.Ctx)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UserResolver.prototype, "me", null);
 __decorate([
     (0, type_graphql_1.Mutation)(() => UserResponse),
     __param(0, (0, type_graphql_1.Arg)('options')),

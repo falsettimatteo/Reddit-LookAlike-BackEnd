@@ -1,7 +1,7 @@
 
 import { User } from '../entities/User';
 import { MyContext } from 'src/types';
-import {Resolver, Mutation, Arg, InputType, Field, Ctx, ObjectType} from 'type-graphql'
+import {Resolver, Mutation, Arg, InputType, Field, Ctx, ObjectType, Query} from 'type-graphql'
 import argon2 from 'argon2';
 import { EntityManager } from '@mikro-orm/postgresql';
 
@@ -34,11 +34,19 @@ class UserResponse{
 
 @Resolver()
 export class UserResolver{
+    @Query(() => User, {nullable: true })
+   async me(@Ctx() {req, em}: MyContext) {
+        if(!req.session.userid) {
+            return null;
+        }
+        const user = await em.findOne(User, {id: req.session.userid});
+        return user;
+    }
 
     @Mutation( () => UserResponse)
     async register( 
         @Arg('options') options: UsernamePasswordInput,
-        @Ctx() {em, req}: MyContext //req
+        @Ctx() {em, req}: MyContext 
     ): Promise<UserResponse> {
         if(options.username.length <= 2){
             return {
@@ -59,12 +67,13 @@ export class UserResolver{
         }
         const hashedPassword = await argon2.hash(options.password);
         let user;
+        const date = new Date();
         try{
             const result = await (em as EntityManager).createQueryBuilder(User).getKnexQuery().insert({
                 username: options.username,
                 password: hashedPassword,
-                created_at: new Date(),
-                updated_at: new Date(),
+                created_at: date,
+                updated_at: date,
             }).returning("*");
             user = result[0];
         } catch(err) {
@@ -80,7 +89,8 @@ export class UserResolver{
             console.log("Message: ", err);
         }
          req.session.userid = user.id;
-        return {user}
+         console.log(req.session)
+        return user;
     }
 
     //-----------------------------su Ctx va ,req e poi si fa req.session.userid = user.id ma non funziona

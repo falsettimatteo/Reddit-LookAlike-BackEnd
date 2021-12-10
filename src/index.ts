@@ -9,12 +9,9 @@ import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 
-
 import connectRedis from 'connect-redis';
 import session from 'express-session';
 import cors from 'cors';
-
-
 import * as redis from 'redis';
 
 
@@ -31,8 +28,10 @@ await orm.getMigrator().up();
 
  app.use(
      cors({
+    //origin: 'https://studio.apollographql.com',
     origin: 'http://localhost:3000',
     credentials: true,
+
     
     })
  )
@@ -48,11 +47,11 @@ await orm.getMigrator().up();
      }),
      cookie: {
          maxAge: 1000 *60 *60 *24 *365 * 10, //10 years
-         httpOnly: true,
+         httpOnly: false,
          sameSite:'lax',
          secure: __prod__,
      },
-     saveUninitialized: true,
+     saveUninitialized: false,
      secret: 'RandomStringToHide',
      resave: false,
    })
@@ -70,9 +69,6 @@ const apolloServer = new ApolloServer({
 })
 redisClient.on('error', function (err) {
     console.log('Could NOT establish a connection with REDIS. ' + err);
-});
-redisClient.on('connect', () => {
-    console.log('Connected to REDIS successfully');
 });
 
 await apolloServer.start();

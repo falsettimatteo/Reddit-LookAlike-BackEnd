@@ -54,11 +54,11 @@ const main = async () => {
         }),
         cookie: {
             maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
-            httpOnly: true,
+            httpOnly: false,
             sameSite: 'lax',
             secure: constants_1.__prod__,
         },
-        saveUninitialized: true,
+        saveUninitialized: false,
         secret: 'RandomStringToHide',
         resave: false,
     }));
@@ -71,9 +71,6 @@ const main = async () => {
     });
     redisClient.on('error', function (err) {
         console.log('Could NOT establish a connection with REDIS. ' + err);
-    });
-    redisClient.on('connect', () => {
-        console.log('Connected to REDIS successfully');
     });
     await apolloServer.start();
     await redisClient.connect();
