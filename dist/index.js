@@ -24,7 +24,7 @@ const main = async () => {
         credentials: true,
     }));
     app.use(cookieSession({
-        name: 'QID-C',
+        name: constants_1.COOKIE_NAME,
         keys: ['RandomStringToHide'],
         maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
         httpOnly: false,
