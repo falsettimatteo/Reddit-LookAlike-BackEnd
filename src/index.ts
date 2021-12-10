@@ -9,10 +9,14 @@ import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 
+
+import cors from 'cors';
+/*
 import connectRedis from 'connect-redis';
 import session from 'express-session';
-import cors from 'cors';
-import * as redis from 'redis';
+import * as redis from 'redis';*/
+
+const cookieSession = require('cookie-session');
 
 
 const main = async () => {
@@ -23,8 +27,8 @@ await orm.getMigrator().up();
 
  const app = express();
   
- const RedisStore =  connectRedis(session);
- const redisClient = redis.createClient();
+ //const RedisStore =  connectRedis(session);
+ //const redisClient = redis.createClient();
 
  app.use(
      cors({
@@ -35,7 +39,7 @@ await orm.getMigrator().up();
     
     })
  )
- 
+  /*
  app.use(
    session({
        name: 'QID',
@@ -55,7 +59,17 @@ await orm.getMigrator().up();
      secret: 'RandomStringToHide',
      resave: false,
    })
- )
+ )*/
+ app.use(cookieSession({
+    name: 'QID-C',
+    keys: ['RandomStringToHide'],
+  
+    // Cookie Options
+    maxAge: 1000 *60 *60 *24 *365 * 10, //10 years
+         httpOnly: false,
+         sameSite:'lax',
+         secure: __prod__,
+  }))
  
 
 
@@ -67,12 +81,13 @@ const apolloServer = new ApolloServer({
     }),
     context: ({req,res}) => ({ em: orm.em, req,res })  //this is accessible from all the resolvers!
 })
+/*
 redisClient.on('error', function (err) {
     console.log('Could NOT establish a connection with REDIS. ' + err);
-});
+});*/
 
 await apolloServer.start();
-await redisClient.connect();
+//await redisClient.connect();
 
 apolloServer.applyMiddleware({ app , cors: false});
 
