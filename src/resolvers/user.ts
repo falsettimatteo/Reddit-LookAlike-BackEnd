@@ -4,6 +4,7 @@ import { MyContext } from 'src/types';
 import {Resolver, Mutation, Arg, InputType, Field, Ctx, ObjectType, Query} from 'type-graphql'
 import argon2 from 'argon2';
 import { EntityManager } from '@mikro-orm/postgresql';
+import { COOKIE_NAME } from 'src/constants';
 
 @InputType()
 class UsernamePasswordInput{ //this is a second method to make inputs as @Arg
@@ -123,5 +124,18 @@ export class UserResolver{
         return {
             user
         };
+    }
+
+    @Mutation(() => Boolean)
+    logout(
+        @Ctx() {req, res}: MyContext
+    ) {
+        new Promise(resolve =>  req.session.destroy( err => {
+            res.clearCookie(COOKIE_NAME);
+            if(err){
+                resolve(false)
+                console.log(err);
+            }else resolve(true)
+        }))
     }
 }
