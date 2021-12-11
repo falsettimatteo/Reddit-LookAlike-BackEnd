@@ -12,23 +12,26 @@ import { UserResolver } from "./resolvers/user";
 
 import cors from 'cors';
 /*
+import { sendEmail } from "./utils/sendEmail";
+import { User } from "./entities/User";
+*/
+
 import connectRedis from 'connect-redis';
 import session from 'express-session';
-import * as redis from 'redis';*/
+import Redis from 'ioredis';
 
 const cookieSession = require('cookie-session');
 
 
 const main = async () => {
-
     
 const orm =await MikroORM.init(microConfig);
 await orm.getMigrator().up();
 
  const app = express();
   
- //const RedisStore =  connectRedis(session);
- //const redisClient = redis.createClient();
+ const RedisStore =  connectRedis(session);
+ const redis = new Redis();
 
  app.use(
      cors({
@@ -39,12 +42,12 @@ await orm.getMigrator().up();
     
     })
  )
-  /*
+  
  app.use(
-   session({
-       name: 'QID',
+    cookieSession({
+       name: COOKIE_NAME,
      store: new RedisStore({ 
-     client: redisClient,
+     client: redis,
      disableTouch: true,
      //host: '127.0.0.1',
      //port: 6379,
@@ -59,7 +62,7 @@ await orm.getMigrator().up();
      secret: 'RandomStringToHide',
      resave: false,
    })
- )*/
+ ) /*
  app.use(cookieSession({
     name: COOKIE_NAME,
     keys: ['RandomStringToHide'],
@@ -69,7 +72,7 @@ await orm.getMigrator().up();
          httpOnly: false,
          sameSite:'lax',
          secure: __prod__,
-  }))
+  }))*/
  
 
 
@@ -79,12 +82,12 @@ const apolloServer = new ApolloServer({
         validate: false,
 
     }),
-    context: ({req,res}) => ({ em: orm.em, req,res })  //this is accessible from all the resolvers!
+    context: ({req,res}) => ({ em: orm.em, req,res, redis })  //this is accessible from all the resolvers!
 })
-/*
-redisClient.on('error', function (err) {
+
+redis.on('error', function (err) {
     console.log('Could NOT establish a connection with REDIS. ' + err);
-});*/
+});
 
 await apolloServer.start();
 //await redisClient.connect();

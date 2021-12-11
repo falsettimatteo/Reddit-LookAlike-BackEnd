@@ -18,8 +18,12 @@ export class User {
     updatedAt = new Date();
 
     @Field()
-    @Property()
+    @Property({type: "text", unique: true})
     username!: string;
+
+    @Field()
+    @Property({type: "text", unique: true})
+    email!: string;
 
     @Property()  //the password in not exposed with Field()
     password!: string;
