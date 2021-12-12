@@ -19,7 +19,7 @@ async function sendEmail(to, html) {
         from: '"Fred Foo 👻" <foo@example.com>',
         to: to,
         subject: "Change Password",
-        html: html,
+        html,
     });
     console.log("Message sent: %s", info.messageId);
     console.log("Preview URL: %s", nodemailer_1.default.getTestMessageUrl(info));
