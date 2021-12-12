@@ -24,6 +24,7 @@ const UsernamePasswordInput_1 = require("./UsernamePasswordInput");
 const validateRegister_1 = require("../utils/validateRegister");
 const sendEmail_1 = require("../utils/sendEmail");
 const uuid_1 = require("uuid");
+const typeorm_1 = require("typeorm");
 let FieldError = class FieldError {
 };
 __decorate([
@@ -51,7 +52,7 @@ UserResponse = __decorate([
     (0, type_graphql_1.ObjectType)()
 ], UserResponse);
 let UserResolver = class UserResolver {
-    async changePassword(token, newPassword, { em, redis }) {
+    async changePassword(token, newPassword, { redis, req }) {
         if (newPassword.length <= 2) {
             return {
                 errors: [
@@ -73,7 +74,8 @@ let UserResolver = class UserResolver {
                 ],
             };
         }
-        const user = await em.findOne(User_1.User, { id: parseInt(userId) });
+        const userIdNum = parseInt(userId);
+        const user = await User_1.User.findOne(userIdNum);
         if (!user) {
             return {
                 errors: [
@@ -84,13 +86,13 @@ let UserResolver = class UserResolver {
                 ],
             };
         }
-        user.password = await argon2_1.default.hash(newPassword);
-        await em.persistAndFlush(user);
+        await User_1.User.update({ id: userIdNum }, { password: await argon2_1.default.hash(newPassword) });
+        req.session.cookie = user.id;
         await redis.del(constants_1.FORGET_PASSWORD_PREFIX + token);
         return { user };
     }
-    async forgotPassword(email, { em, redis }) {
-        const user = await em.findOne(User_1.User, { email });
+    async forgotPassword(email, { redis }) {
+        const user = await User_1.User.findOne({ where: { email: email } });
         if (!user) {
             return true;
         }
@@ -99,35 +101,27 @@ let UserResolver = class UserResolver {
         await (0, sendEmail_1.sendEmail)(email, `<a href="http://localhost:3000/change-password/${token}"> reset password</a>`);
         return true;
     }
-    async me({ req, em }) {
+    async me({ req }) {
         if (!req.session.cookie) {
             return null;
         }
         const ID = parseInt(req.session.cookie.toString());
-        const user = await em.findOne(User_1.User, { id: ID });
-        return user;
+        return await User_1.User.findOne(ID);
     }
-    async register(options, { em, req }) {
+    async register(options, { req }) {
         const error = (0, validateRegister_1.validateRegister)(options);
         if (error) {
             return { errors: error };
         }
         const hashedPassword = await argon2_1.default.hash(options.password);
         let user;
-        const date = new Date();
         try {
-            const result = await em
-                .createQueryBuilder(User_1.User)
-                .getKnexQuery()
-                .insert({
+            const result = await (0, typeorm_1.getConnection)().createQueryBuilder().insert().into(User_1.User).values({
                 username: options.username,
                 email: options.email,
                 password: hashedPassword,
-                created_at: date,
-                updated_at: date,
-            })
-                .returning("*");
-            user = result[0];
+            }).returning('*').execute();
+            user = result.raw[0];
         }
         catch (err) {
             if (err.code === "23505") {
@@ -145,10 +139,10 @@ let UserResolver = class UserResolver {
         req.session.cookie = user.id;
         return user;
     }
-    async login(usernameOrEmail, password, { em, req }) {
-        const user = await em.findOne(User_1.User, usernameOrEmail.includes("@")
-            ? { email: usernameOrEmail }
-            : { username: usernameOrEmail });
+    async login(usernameOrEmail, password, { req }) {
+        const user = await User_1.User.findOne(usernameOrEmail.includes("@")
+            ? { where: { email: usernameOrEmail } }
+            : { where: { username: usernameOrEmail } });
         if (!user) {
             return {
                 errors: [

@@ -1,7 +1,5 @@
 import "reflect-metadata"
-import {MikroORM} from "@mikro-orm/core"
 import { COOKIE_NAME, __prod__ } from "./constants"; 
-import microConfig from './mikro-orm.config';
 import express from 'express'
 import {ApolloServer} from 'apollo-server-express'
 import {buildSchema} from 'type-graphql'
@@ -22,11 +20,22 @@ import Redis from 'ioredis';
 
 const cookieSession = require('cookie-session');
 
+import {createConnection} from 'typeorm'
+import { User } from "./entities/User";
+import { Post } from "./entities/Post";
+
 
 const main = async () => {
-    
-const orm =await MikroORM.init(microConfig);
-await orm.getMigrator().up();
+
+const conn = await createConnection({
+    type: 'postgres',
+    database: 'reddit',
+    username: 'postgres',
+    password: 'password',
+    logging: true,
+    synchronize: true,
+    entities: [Post, User],
+});
 
  const app = express();
   
@@ -82,7 +91,7 @@ const apolloServer = new ApolloServer({
         validate: false,
 
     }),
-    context: ({req,res}) => ({ em: orm.em, req,res, redis })  //this is accessible from all the resolvers!
+    context: ({req,res}) => ({ req,res, redis })  //this is accessible from all the resolvers!
 })
 
 redis.on('error', function (err) {
