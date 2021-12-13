@@ -1,7 +1,8 @@
 import { Post } from '../entities/Post';
-import {Resolver, Query, Arg, Mutation, InputType, Field, Ctx, UseMiddleware} from 'type-graphql'
+import {Resolver, Query, Arg, Mutation, InputType, Field, Ctx, UseMiddleware, Int} from 'type-graphql'
 import { MyContext } from 'src/types';
 import { isAuth } from '../middleware/isAuth';
+import { getConnection } from 'typeorm';
 
 @InputType()
 class PostInput {
@@ -16,8 +17,21 @@ class PostInput {
 export class PostResolver{
 
     @Query( () => [Post])
-    getPosts(): Promise<Post[]> {
-        return Post.find();
+    getPosts(
+        @Arg('limit', () => Int)limit: number,
+        @Arg('cursor', () => String, {nullable: true}) cursor: string | null,  //the cursor is used to set the starting point of the pagination
+    ): Promise<Post[]> {
+        const realLimit = Math.min(50, limit); //if it is greater then 50 it set the limit to 50
+        const qb = getConnection()
+        .getRepository(Post)
+        .createQueryBuilder("p")
+        .orderBy('"createdAt"', "DESC")
+        .take(realLimit);
+        if(cursor){
+            qb.where('"createdAt < :cursor"',
+             {curson: new Date(parseInt(cursor))});
+        }
+        return qb.getMany();
     }
 
     @Query( () => Post, { nullable: true})

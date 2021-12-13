@@ -23,10 +23,12 @@ const cookieSession = require('cookie-session');
 import {createConnection} from 'typeorm'
 import { User } from "./entities/User";
 import { Post } from "./entities/Post";
+import path from "path";
 
 
 const main = async () => {
 
+    //@ts-ignore
 const conn = await createConnection({
     type: 'postgres',
     database: 'reddit',
@@ -34,8 +36,11 @@ const conn = await createConnection({
     password: 'password',
     logging: true,
     synchronize: true,
+    migrations: [path.join(__dirname, "./migrations/*")],
     entities: [Post, User],
 });
+
+//conn.runMigrations();
 
  const app = express();
   
