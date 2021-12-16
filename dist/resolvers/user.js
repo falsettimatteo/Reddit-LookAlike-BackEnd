@@ -89,7 +89,7 @@ let UserResolver = class UserResolver {
         await User_1.User.update({ id: userIdNum }, { password: await argon2_1.default.hash(newPassword) });
         req.session.cookie = user.id;
         await redis.del(constants_1.FORGET_PASSWORD_PREFIX + token);
-        return { user };
+        return { user, };
     }
     async forgotPassword(email, { redis }) {
         const user = await User_1.User.findOne({ where: { email: email } });
@@ -106,7 +106,9 @@ let UserResolver = class UserResolver {
             return null;
         }
         const ID = parseInt(req.session.cookie.toString());
-        return await User_1.User.findOne(ID);
+        console.log("ID: " + ID);
+        let user = req.session.cookie;
+        return await User_1.User.findOne(user);
     }
     async register(options, { req }) {
         const error = (0, validateRegister_1.validateRegister)(options);
@@ -136,8 +138,10 @@ let UserResolver = class UserResolver {
             }
             console.log("Message: ", err);
         }
-        req.session.cookie = user.id;
-        return user;
+        if (user) {
+            req.session.cookie = user.id;
+        }
+        return { user, };
     }
     async login(usernameOrEmail, password, { req }) {
         const user = await User_1.User.findOne(usernameOrEmail.includes("@")
@@ -171,17 +175,9 @@ let UserResolver = class UserResolver {
             user,
         };
     }
-    logout({ req, res }) {
-        new Promise((resolve) => req.session.destroy((err) => {
-            res.clearCookie(constants_1.COOKIE_NAME);
-            if (err) {
-                resolve(false);
-                console.log(err);
-            }
-            else
-                resolve(true);
-        }));
+    logout({ req }) {
         req.session = null;
+        return true;
     }
 };
 __decorate([

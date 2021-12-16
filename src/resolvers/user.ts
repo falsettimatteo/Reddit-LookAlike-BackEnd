@@ -10,7 +10,7 @@ import {
   Query,
 } from "type-graphql";
 import argon2 from "argon2";
-import { COOKIE_NAME, FORGET_PASSWORD_PREFIX } from "../constants";
+import { FORGET_PASSWORD_PREFIX } from "../constants";
 import { UsernamePasswordInput } from "./UsernamePasswordInput";
 import { validateRegister } from "../utils/validateRegister";
 import { sendEmail } from "../utils/sendEmail";
@@ -83,7 +83,7 @@ export class UserResolver {
     //after changing the user it logs in
     req.session.cookie = user.id;
     await redis.del(FORGET_PASSWORD_PREFIX + token) //this is the key
-    return { user };
+    return { user, };
   }
 
   @Mutation(() => Boolean)
@@ -115,7 +115,10 @@ export class UserResolver {
       return null;
     }
     const ID = parseInt(req.session.cookie.toString());
-    return await User.findOne(ID);
+    console.log( "ID: " + ID);
+    //return await User.findOne(ID);
+    let user: any = req.session.cookie
+    return await User.findOne( user );
   }
 
   @Mutation(() => UserResponse)
@@ -152,8 +155,10 @@ export class UserResolver {
       }
       console.log("Message: ", err);
     }
+    if(user){
     req.session.cookie = user.id;
-    return user;
+    }
+    return {user,}
   }
 
   //-----------------------------su Ctx va ,req e poi si fa req.session.userid = user.id ma non funziona
@@ -190,6 +195,7 @@ export class UserResolver {
       };
     }
     if (user) {
+
       req.session.cookie = user.id;
     }
     return {
@@ -198,7 +204,10 @@ export class UserResolver {
   }
 
   @Mutation(() => Boolean)
-  logout(@Ctx() { req, res }: MyContext) {
+  logout(@Ctx() { req }: MyContext) {
+    //@ts-ignore
+    req.session = null;
+ /*
     new Promise((resolve) =>
       req.session.destroy((err) => {
         res.clearCookie(COOKIE_NAME);
@@ -207,8 +216,7 @@ export class UserResolver {
           console.log(err);
         } else resolve(true);
       })
-    );
-    //@ts-ignore
-    req.session = null;
+    );*/
+    return true;
   }
 }
