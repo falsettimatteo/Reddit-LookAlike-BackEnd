@@ -8,6 +8,8 @@ import {
   Ctx,
   ObjectType,
   Query,
+  FieldResolver,
+  Root,
 } from "type-graphql";
 import argon2 from "argon2";
 import { FORGET_PASSWORD_PREFIX } from "../constants";
@@ -34,8 +36,17 @@ class UserResponse {
   user?: User;
 }
 
-@Resolver()
+@Resolver(User)
 export class UserResolver {
+   @FieldResolver(() => String)
+   email(@Root() user: User, @Ctx() {req}: MyContext){
+     //if it is true, than the user logged in is the creator of the post
+     if(req.session.cookie /*=== user.id*/){  //controllare se il coocie è uguale all'user.id passato _*_*_*_**_*_*_  
+      return user.email;
+     }
+     return "";
+   }
+
   @Mutation(() => UserResponse)
   async changePassword(
     @Arg("token") token: string,
@@ -197,6 +208,7 @@ export class UserResolver {
     if (user) {
 
       req.session.cookie = user.id;
+      console.log(req.session.cookie);
     }
     return {
       user,
