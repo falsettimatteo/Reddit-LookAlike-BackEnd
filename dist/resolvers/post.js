@@ -86,8 +86,13 @@ let PostResolver = class PostResolver {
         const realLimit = Math.min(50, limit);
         const realLimitPlusOne = Math.min(50, limit) + 1;
         const replacements = [realLimitPlusOne];
+        if (req.session.cookie) {
+            replacements.push(req.session.cookie);
+        }
+        let cursorIndx = 3;
         if (cursor) {
             replacements.push(new Date(parseInt(cursor)));
+            cursorIndx = replacements.length;
         }
         const posts = await (0, typeorm_1.getConnection)().query(`
      select p.*,
@@ -98,12 +103,12 @@ let PostResolver = class PostResolver {
         'createdAt', u."createdAt",
         'updatedAt', u."updatedAt"
           ) creator,
-          ${req.session.cookie
-            ? `(select value from updoot where "userId" = ${req.session.cookie} and "postId" = p.id) "voteStatus"`
+         ${!!req.session.cookie
+            ? `(select value from updoot where "userId" = $2 and "postId" = p.id) "voteStatus"`
             : 'null as "voteStatus"'}
       from public.post p
       inner join public.user u on u.id = p."creatorId"
-      ${cursor ? `where p."createdAt" < $2` : ""}
+      ${cursor ? `where p."createdAt" < $${cursorIndx}` : ""}
       order by p."createdAt" DESC
       limit $1`, replacements);
         return {
@@ -144,8 +149,8 @@ __decorate([
 __decorate([
     (0, type_graphql_1.Mutation)(() => Boolean),
     (0, type_graphql_1.UseMiddleware)(isAuth_1.isAuth),
-    __param(0, (0, type_graphql_1.Arg)('postId', () => type_graphql_1.Int)),
-    __param(1, (0, type_graphql_1.Arg)('value', () => type_graphql_1.Int)),
+    __param(0, (0, type_graphql_1.Arg)("postId", () => type_graphql_1.Int)),
+    __param(1, (0, type_graphql_1.Arg)("value", () => type_graphql_1.Int)),
     __param(2, (0, type_graphql_1.Ctx)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Number, Object]),
