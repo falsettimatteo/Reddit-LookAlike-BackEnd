@@ -17,6 +17,7 @@ const Post_1 = require("../entities/Post");
 const type_graphql_1 = require("type-graphql");
 const isAuth_1 = require("../middleware/isAuth");
 const typeorm_1 = require("typeorm");
+const Updoot_1 = require("../entities/Updoot");
 let PostInput = class PostInput {
 };
 __decorate([
@@ -51,19 +52,37 @@ let PostResolver = class PostResolver {
         const isUpdoot = value != -1;
         const realValue = isUpdoot ? 1 : -1;
         const userId = req.session.cookie;
-        console.log("USER ID: ", userId);
-        (0, typeorm_1.getConnection)().query(`
-      START TRANSACTION;
-      insert into updoot ("userId", "postId", value)
-      values (${userId}, ${postId}, ${realValue});
-      update public.post
+        const hasVoted = await Updoot_1.Updoot.findOne({ where: { postId, userId } });
+        if (hasVoted && hasVoted.value !== realValue) {
+            await (0, typeorm_1.getConnection)().transaction(async (tm) => {
+                await tm.query(`
+          update updoot
+          set value = ${realValue}
+          where "postId" = ${postId} and "userId" =${userId}
+          `);
+                await tm.query(`
+          update post
+          set points = points + ${2 * realValue}
+          where id = ${postId}
+          `);
+            });
+        }
+        else if (!hasVoted) {
+            await (0, typeorm_1.getConnection)().transaction(async (tm) => {
+                await tm.query(`
+          insert into updoot ("userId", "postId", value)
+          values (${userId}, ${postId}, ${realValue});
+          `);
+                await tm.query(`
+          update public.post
       set points = points + ${realValue}
-      where id = ${postId};
-      COMMIT;
-      `);
+      where id = ${postId}
+          `);
+            });
+        }
         return true;
     }
-    async getPosts(limit, cursor) {
+    async getPosts(limit, cursor, { req }) {
         const realLimit = Math.min(50, limit);
         const realLimitPlusOne = Math.min(50, limit) + 1;
         const replacements = [realLimitPlusOne];
@@ -78,7 +97,10 @@ let PostResolver = class PostResolver {
         'email', u.email,
         'createdAt', u."createdAt",
         'updatedAt', u."updatedAt"
-          ) creator
+          ) creator,
+          ${req.session.cookie
+            ? `(select value from updoot where "userId" = ${req.session.cookie} and "postId" = p.id) "voteStatus"`
+            : 'null as "voteStatus"'}
       from public.post p
       inner join public.user u on u.id = p."creatorId"
       ${cursor ? `where p."createdAt" < $2` : ""}
@@ -133,8 +155,9 @@ __decorate([
     (0, type_graphql_1.Query)(() => PaginatedPosts),
     __param(0, (0, type_graphql_1.Arg)("limit", () => type_graphql_1.Int)),
     __param(1, (0, type_graphql_1.Arg)("cursor", () => String, { nullable: true })),
+    __param(2, (0, type_graphql_1.Ctx)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:paramtypes", [Number, Object, Object]),
     __metadata("design:returntype", Promise)
 ], PostResolver.prototype, "getPosts", null);
 __decorate([
