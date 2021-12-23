@@ -182,8 +182,9 @@ let UserResolver = class UserResolver {
             user,
         };
     }
-    logout({ req }) {
+    logout({ req, res }) {
         req.session = null;
+        res.clearCookie(constants_1.COOKIE_NAME);
         return true;
     }
 };

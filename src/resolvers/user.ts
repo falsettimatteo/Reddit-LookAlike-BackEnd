@@ -12,7 +12,7 @@ import {
   Root,
 } from "type-graphql";
 import argon2 from "argon2";
-import { FORGET_PASSWORD_PREFIX } from "../constants";
+import { COOKIE_NAME, FORGET_PASSWORD_PREFIX } from "../constants";
 import { UsernamePasswordInput } from "./UsernamePasswordInput";
 import { validateRegister } from "../utils/validateRegister";
 import { sendEmail } from "../utils/sendEmail";
@@ -216,9 +216,10 @@ export class UserResolver {
   }
 
   @Mutation(() => Boolean)
-  logout(@Ctx() { req }: MyContext) {
+  logout(@Ctx() { req,res }: MyContext) {
     //@ts-ignore
     req.session = null;
+    res.clearCookie(COOKIE_NAME);
  /*
     new Promise((resolve) =>
       req.session.destroy((err) => {
