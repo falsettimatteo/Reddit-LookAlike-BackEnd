@@ -105,12 +105,11 @@ export class PostResolver {
     const realLimitPlusOne = Math.min(50, limit) + 1; //it search for 1 element more than the lmit to see if it has more posts
     const replacements: any[] = [realLimitPlusOne];
 
-    if(req.session.cookie){
+    if (req.session.cookie) {
       replacements.push(req.session.cookie);
     }
     let cursorIndx = 3;
     if (cursor) {
-      
       replacements.push(new Date(parseInt(cursor)));
       cursorIndx = replacements.length;
     }
@@ -146,7 +145,7 @@ export class PostResolver {
 
   @Query(() => Post, { nullable: true })
   getPost(@Arg("id", () => Int) id: number): Promise<Post | undefined> {
-    return Post.findOne(id, {relations: ["creator"]});
+    return Post.findOne(id, { relations: ["creator"] });
   }
 
   @Mutation(() => Post)
@@ -164,23 +163,40 @@ export class PostResolver {
 
   @Mutation(() => Post)
   async updatePost(
-    @Arg("id") id: number,
-    @Arg("title", () => String, { nullable: true }) title: string
+    @Arg("id", () => Int) id: number,
+    @Arg("title",) title: string,
+    @Arg("text") text: string,
+    @Ctx() {req}: MyContext
   ): Promise<Post | null> {
-    const post = await Post.findOne(id);
-    if (!post) {
-      return null;
-    }
 
-    if (typeof title !== "undefined") {
-      post.title = title;
-      await Post.update({ id }, { title });
-    }
-    return post;
+     const result = await getConnection()
+     .createQueryBuilder()
+     .update(Post)
+     .set({title, text})
+     .where('id = :id and "creatorId" = :creatorId', {id, creatorId: req.session.cookie})
+     .returning("*")
+     .execute();
+     return result.raw[0] as any;
+
   }
 
   @Mutation(() => Boolean)
-  async deletePost(@Arg("id") id: number): Promise<boolean> {
+  @UseMiddleware(isAuth)
+  async deletePost(
+    @Arg("id", () => Int) id: number,
+    @Ctx() { req }: MyContext
+  ): Promise<boolean> {
+    const post = await Post.findOne(id);
+    if (!post) {
+      return false;
+    }
+    if (
+      req.session.cookie &&
+      post.creatorId !== parseInt(req.session.cookie.toString())
+    ) {
+      throw new Error("not authorized");
+    }
+    await Updoot.delete({ postId: id });
     await Post.delete(id); // it returns always true | make it return false if error happens
     return true;
   }

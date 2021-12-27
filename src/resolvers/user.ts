@@ -122,7 +122,7 @@ export class UserResolver {
 
   @Query(() => User, { nullable: true })
   async me(@Ctx() { req }: MyContext) {
-    if (!req.session.cookie) {
+    if (!req.headers.cookie) {
       return null;
     }
     const ID = parseInt(req.session.cookie.toString());
@@ -167,7 +167,7 @@ export class UserResolver {
       console.log("Message: ", err);
     }
     if(user){
-    req.session.cookie = user.id;
+    req.headers.cookie = user.id;
     }
     return {user,}
   }
