@@ -94,6 +94,55 @@ export class PostResolver {
     // `);
     return true;
   }
+  @Query(() => PaginatedPosts)
+  async getUserPosts(
+    @Arg("userId", () => Int) userId: number,
+    @Arg("limit", () => Int) limit: number,
+  @Arg("cursor", () => String, { nullable: true }) cursor: string | null, //the cursor is used to set the starting point of the pagination
+  @Ctx() { req }: MyContext
+): Promise<PaginatedPosts> {
+  const realLimit = Math.min(50, limit);
+  const realLimitPlusOne = Math.min(50, limit) + 1; //it search for 1 element more than the lmit to see if it has more posts
+  const replacements: any[] = [realLimitPlusOne];
+
+  if (req.session.cookie) {
+    replacements.push(req.session.cookie);
+  }
+  let cursorIndx = 3;
+  if (cursor) {
+    replacements.push(new Date(parseInt(cursor)));
+    cursorIndx = replacements.length;
+  }
+
+  const posts = await getConnection().query(
+    `
+   select p.*,
+    json_build_object(
+      'id', u.id,  
+      'username', u.username,
+      'email', u.email,
+      'createdAt', u."createdAt",
+      'updatedAt', u."updatedAt"
+        ) creator,
+       ${
+         !!req.session.cookie
+           ? `(select value from updoot where "userId" = $2 and "postId" = p.id) "voteStatus"`
+           : 'null as "voteStatus"'
+       }
+    from public.post p
+    inner join public.user u on u.id = p."creatorId"
+    AND u.id = ${userId}
+    ${cursor ? `where p."createdAt" < $${cursorIndx}` : ""}
+    order by p."createdAt" DESC
+    limit $1`,
+    replacements
+  );
+
+  return {
+    posts: posts.slice(0, realLimit),
+    hasMore: posts.length === realLimitPlusOne,
+  };
+  }
 
   @Query(() => PaginatedPosts)
   async getPosts(

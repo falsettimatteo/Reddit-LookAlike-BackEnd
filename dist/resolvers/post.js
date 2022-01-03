@@ -82,6 +82,41 @@ let PostResolver = class PostResolver {
         }
         return true;
     }
+    async getUserPosts(userId, limit, cursor, { req }) {
+        const realLimit = Math.min(50, limit);
+        const realLimitPlusOne = Math.min(50, limit) + 1;
+        const replacements = [realLimitPlusOne];
+        if (req.session.cookie) {
+            replacements.push(req.session.cookie);
+        }
+        let cursorIndx = 3;
+        if (cursor) {
+            replacements.push(new Date(parseInt(cursor)));
+            cursorIndx = replacements.length;
+        }
+        const posts = await (0, typeorm_1.getConnection)().query(`
+   select p.*,
+    json_build_object(
+      'id', u.id,  
+      'username', u.username,
+      'email', u.email,
+      'createdAt', u."createdAt",
+      'updatedAt', u."updatedAt"
+        ) creator,
+       ${!!req.session.cookie
+            ? `(select value from updoot where "userId" = $2 and "postId" = p.id) "voteStatus"`
+            : 'null as "voteStatus"'}
+    from public.post p
+    inner join public.user u on u.id = p."creatorId"
+    AND u.id = ${userId}
+    ${cursor ? `where p."createdAt" < $${cursorIndx}` : ""}
+    order by p."createdAt" DESC
+    limit $1`, replacements);
+        return {
+            posts: posts.slice(0, realLimit),
+            hasMore: posts.length === realLimitPlusOne,
+        };
+    }
     async getPosts(limit, cursor, { req }) {
         const realLimit = Math.min(50, limit);
         const realLimitPlusOne = Math.min(50, limit) + 1;
@@ -164,6 +199,16 @@ __decorate([
     __metadata("design:paramtypes", [Number, Number, Object]),
     __metadata("design:returntype", Promise)
 ], PostResolver.prototype, "vote", null);
+__decorate([
+    (0, type_graphql_1.Query)(() => PaginatedPosts),
+    __param(0, (0, type_graphql_1.Arg)("userId", () => type_graphql_1.Int)),
+    __param(1, (0, type_graphql_1.Arg)("limit", () => type_graphql_1.Int)),
+    __param(2, (0, type_graphql_1.Arg)("cursor", () => String, { nullable: true })),
+    __param(3, (0, type_graphql_1.Ctx)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number, Object, Object]),
+    __metadata("design:returntype", Promise)
+], PostResolver.prototype, "getUserPosts", null);
 __decorate([
     (0, type_graphql_1.Query)(() => PaginatedPosts),
     __param(0, (0, type_graphql_1.Arg)("limit", () => type_graphql_1.Int)),
