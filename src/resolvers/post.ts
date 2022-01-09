@@ -83,15 +83,6 @@ export class PostResolver {
       });
     }
 
-    // getConnection().query(`
-    // START TRANSACTION;
-    // insert into updoot ("userId", "postId", value)
-    // values (${userId}, ${postId}, ${realValue});
-    // update public.post
-    // set points = points + ${realValue}
-    // where id = ${postId};
-    // COMMIT;
-    // `);
     return true;
   }
   @Query(() => PaginatedPosts)

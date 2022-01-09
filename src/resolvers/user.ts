@@ -127,7 +127,6 @@ export class UserResolver {
     }
     const ID = parseInt(req.session.cookie.toString());
     console.log( "ID: " + ID);
-    //return await User.findOne(ID);
     let user: any = req.session.cookie
     return await User.findOne( user );
   }
@@ -172,7 +171,7 @@ export class UserResolver {
     return {user,}
   }
 
-  //-----------------------------su Ctx va ,req e poi si fa req.session.userid = user.id ma non funziona
+  
   @Mutation(() => UserResponse)
   async login(
     @Arg("usernameOrEmail") usernameOrEmail: string,
@@ -220,16 +219,6 @@ export class UserResolver {
     //@ts-ignore
     req.session = null;
     res.clearCookie(COOKIE_NAME);
- /*
-    new Promise((resolve) =>
-      req.session.destroy((err) => {
-        res.clearCookie(COOKIE_NAME);
-        if (err) {
-          resolve(false);
-          console.log(err);
-        } else resolve(true);
-      })
-    );*/
     return true;
   }
 }

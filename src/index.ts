@@ -8,10 +8,7 @@ import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 
 import cors from "cors";
-/*
-import { sendEmail } from "./utils/sendEmail";
-import { User } from "./entities/User";
-*/
+
 
 import connectRedis from "connect-redis";
 //import session from "express-session";
@@ -39,14 +36,13 @@ const main = async () => {
     entities: [Post, User, Updoot],
   });
 
-  //conn.runMigrations();
+
 
   const app = express();
 
   const RedisStore = connectRedis(session);
   const redis = new Redis();
 
-   //app.use(cookieParser({ secret: "RandomStringToHide" }));
 
   app.use(
     cors({
@@ -62,8 +58,6 @@ const main = async () => {
       store: new RedisStore({
         client: redis,
         disableTouch: true,
-        //host: '127.0.0.1',
-        //port: 6379,
       }),
       cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 365 * 10, //10 years
@@ -75,18 +69,7 @@ const main = async () => {
       secret: "RandomStringToHide",
       resave: false,
     })
-  ); /*
-
- app.use(cookieSession({
-    name: COOKIE_NAME,
-    keys: ['RandomStringToHide'],
-  
-    // Cookie Options
-    maxAge: 1000 *60 *60 *24 *365 * 10, //10 years
-         httpOnly: false,
-         sameSite:'lax',
-         secure: __prod__,
-  }))*/
+  );
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
@@ -101,7 +84,7 @@ const main = async () => {
   });
 
   await apolloServer.start();
-  //await redisClient.connect();
+
 
   apolloServer.applyMiddleware({ app, cors: false });
 

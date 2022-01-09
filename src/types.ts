@@ -8,5 +8,3 @@ export type MyContext = {
     redis: Redis;
   }
 
-
-  //https://dev.to/rasikag/learning-react-with-ben-awad-04-428n
